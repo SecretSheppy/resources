@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transformations</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script>
+        const settingsMenu = () => {
+            $("#block-out-div").fadeToggle(500);
+            $("#settings-menu").fadeToggle(500);
+            $("#credits-menu").fadeToggle(500);
+        }
+
+        const toggleTableView = () => {
+            $("#graphical-table-display").slideToggle(500);
+        }
+
+        /*
+        * Transform holds transformation data and functions for the triangle and the square*/
+        class Transform {
+
+            constructor() {
+                // rotation value (radians)
+                this.rotationValues = {
+                    "x" : 0,
+                    "y" : 0,
+                    "z" : 0
+                };
+                this.isInverted = false;
+                this.rotationSpeed = 0.5;
+                this.rotationType = "";
+                document.getElementById("transform-square").style.transition = "all " + this.rotationSpeed + "s " + this.rotationType;
+            }
+
+            /*
+            * Updates the rotation speed value of the square*/
+            updateSquareRotationSpeed = (speed) => {
+                this.rotationSpeed = speed;
+                this.#updateSquareTransformationData();
+            }
+
+            /*
+            * Updates the rotation type of the square*/
+            updateSquareRotationType = (type) => {
+                if (type == true) {
+                    this.rotationType = "linear";
+                } else {
+                    this.rotationType = "";
+                }
+                this.#updateSquareTransformationData();
+            }
+
+            /*
+            * Updates square's transformation data*/
+            #updateSquareTransformationData = () => {
+                document.getElementById("transform-square").style.transition = "transform " + this.rotationSpeed + "s " + this.rotationType;
+            }
+
+            /*
+            * Updates square's rendered position based on the rotationValues JSON*/
+            #updateSquarePosition = () => {
+                let square = document.getElementById("transform-square");
+                square.style.transform = "rotateX(" + this.rotationValues["x"] + "rad) rotateY(" + this.rotationValues["y"] + "rad) rotateZ(-" + this.rotationValues["z"] + "rad)";
+                if (this.isInverted) {
+                    setTimeout(() => {
+                        square.classList.add("inverted");
+                    }, this.rotationSpeed / 2 * 600);
+                } else {
+                    setTimeout(() => {
+                        square.classList.remove("inverted");
+                    }, this.rotationSpeed / 2 * 600);
+                }
+            }
+
+            /*
+            * Toggles the isInverted variable*/
+            #toggleInverted = () => {
+                this.isInverted = this.isInverted ? false : true;
+            }
+
+            /*
+            * Takes in string id for transformation, updates local and graphical position of the square*/
+            transformSquare = (transformation) => {
+                switch (transformation) {
+                    // 2pi rotation
+                    case '0':
+                        this.rotationValues["z"] += Math.PI * 2;
+                        this.#updateSquarePosition();
+                        break;
+                    // pi/2 rotation
+                    case 'P':
+                        this.rotationValues["z"] += Math.PI * 0.5;
+                        this.#updateSquarePosition();
+                        break;
+                    // pi rotation
+                    case 'Q':
+                        this.rotationValues["z"] += Math.PI;
+                        this.#updateSquarePosition();
+                        break;
+                    // 3pi/2 rotation
+                    case 'R':
+                        this.rotationValues["z"] += (3 * Math.PI) * 0.5;
+                        this.#updateSquarePosition();
+                        break;
+                    // reflection in x-axis
+                    case 'X':
+                        this.rotationValues["x"] += Math.PI;
+                        this.#toggleInverted();
+                        this.#updateSquarePosition();
+                        break;
+                    // reflection in y-axis
+                    case 'Y':
+                        this.rotationValues["y"] += Math.PI;
+                        this.#toggleInverted();
+                        this.#updateSquarePosition();
+                        break;
+                    // reflection in w-axis (diagonal)
+                    case 'W':
+                        // TODO - rotate3d solves this problem :)
+                        this.rotationValues["x"] += Math.PI * 0.5;
+                        this.rotationValues["y"] += Math.PI * 0.5;
+                        this.#toggleInverted();
+                        this.#updateSquarePosition();
+                        break;
+                    // reflection in z-axis(diagonal)
+                    case 'Z':
+                        this.rotationValues["x"] += Math.PI * 0.5;
+                        this.rotationValues["y"] -= Math.PI * 0.5;
+                        this.#toggleInverted();
+                        this.#updateSquarePosition();
+                        break;
+                }
+            }
+        }
+    </script>
+    <style>
+        /* styling for the page */
+        :root {
+            --PI: 3.14159265358979;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: Helvetica;
+            user-select: none;
+        }
+
+        body {
+            background-color: aliceblue;
+        }
+
+        .controller {
+            position: absolute;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #2c2c2c;
+            color: #fff;
+            margin-top: 20px;
+            margin-left: 20px;
+            width: 400px;
+            z-index: 999;
+        }
+
+        .controller-small-screen {
+            position: absolute;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #2c2c2c;
+            margin-top: 20px;
+            margin-left: 20px;
+            display: block;
+            max-width: 40px;
+            z-index: 999;
+        }
+
+        .controller > p {
+            border-radius: 5px;
+            background-color: #727272;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+
+        .controller > .button-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .cayley-table > .table-container > .table-row div, .controller-small-screen button, .controller > .button-wrapper > button {
+            background-color: #727272;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            aspect-ratio: 1/1;
+        }
+
+        .controller-small-screen button:not(:last-child) {
+            margin-bottom: 4px;
+        }
+
+        .controller-small-screen button:hover, .controller > .button-wrapper > button:hover {
+            background-color: #4b4b4b;
+        }
+
+        .controller-small-screen button:active, .controller > .button-wrapper > button:active {
+            outline: solid 2px #ffffff;
+        }
+
+        .axis-container {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            z-index: 998;
+        }
+
+        .axis-container img {
+            width: 600px;
+            height: 600px;
+        }
+
+        .transformations-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .transformations-container > .square {
+            border: solid 5px #000000;
+            background-color: #72ceff;
+            content: "";
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .transformations-container > .inverted {
+            background-color: #ff4b4b;
+        }
+
+        .transformations-container > .square > img {
+            height: 50px;
+        }
+
+        .gear-wrapper {
+            position: absolute;
+            right: 20px;
+            margin-top: 20px;
+            z-index: 1001;
+        }
+
+        .gear-wrapper > .gear-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 100%;
+            background-color: #2c2c2c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .gear-wrapper > .gear-button:hover {
+            transform: scale(1.2);
+        }
+
+        .gear-wrapper > .gear-button:hover > img {
+            animation: rotateGear linear infinite 1s;
+        }
+
+        .gear-wrapper > .gear-button:active {
+            background-color: #727272;
+        }
+
+        @keyframes rotateGear {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .gear-wrapper > .gear-button > img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .block-out {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.65);
+            z-index: 1000;
+        }
+
+        .settings {
+            position: absolute;
+            border: solid 4px #2c2c2c;
+            background-color: aliceblue;
+            border-radius: 10px;
+            padding: 10px;
+            right: 20px;
+            top: 100px;
+            width: 400px;
+            z-index: 1001;
+        }
+
+        .settings > input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 7px;
+            border-radius: 5px;
+            background-color: #727272;
+            outline: none;
+            border: none;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+
+        .settings > input[type="range"]::-webkit-slider-thumb, .settings > input[type="range"]::-moz-range-thumb {
+            -webkit-appearance: none;
+            outline: none;
+            border: none;
+            background-color: #2c2c2c;
+            height: 15px;
+            width: 15px;
+            cursor: pointer;
+        }
+
+        .settings > .central-btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .settings > .central-btn-container > button {
+            background-color: #2c2c2c;
+            padding: 10px;
+            color: #fff;
+            outline: none;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .settings > .central-btn-container > button:hover {
+            background-color: #727272;
+        }
+
+        .settings > .central-btn-container > button:active {
+            outline: solid 3px #2c2c2c;
+        }
+
+        .settings > hr {
+            border: none;
+            outline: none;
+            border-bottom: solid 4px #2c2c2c;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .settings > .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .credits {
+            position: absolute;
+            right: 20px;
+            margin-top: 335px;
+            width: 400px;
+            background-color: aliceblue;
+            border: solid 4px #2c2c2c;
+            color: #000;
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 1001;
+        }
+
+        .cayley-table {
+            position: absolute;
+            margin-left: 20px;
+            margin-top: 300px;
+            background-color: #2c2c2c;
+            color: #fff;
+            padding: 10px;
+            width: 400px;
+            border-radius: 10px;
+            z-index: 999;
+        }
+
+        .cayley-table > h2 {
+            cursor: pointer;
+        }
+
+        .cayley-table > .table-container {
+            display: block;
+            margin-top: 15px;
+        }
+
+        .cayley-table > .table-container > .table-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .cayley-table > .table-container > .table-row > .highlight {
+            background-color: #a9a9a9;
+            color: #000;
+        }
+
+        .cayley-table > .table-container > .table-row > .blank {
+            background-color: #2c2c2c;
+        }
+    </style>
+</head>
+<body>
+    <div class="gear-wrapper">
+        <div class="gear-button" onclick="settingsMenu()" title="Settings">
+            <img src="gear-solid.webp" alt="failed-to-load">
+        </div>
+    </div>
+    <div class="settings" id="settings-menu" style="display: none">
+        <h2>Settings:</h2>
+        <hr>
+        <p>Rotation Speed (seconds)</p>
+        <input id="rotation-speed" type="range" min="0" max="5" step="0.01" value="0.5" title="0.3">
+        <div class="checkbox-container">
+            <p>Linear Rotation</p>
+            <input id="linear-rotation" type="checkbox">
+        </div>
+        <div class="checkbox-container">
+            <p>4:3 Screen (square screen)</p>
+            <input id="4-3-screen" type="checkbox">
+        </div>
+        <div class="central-btn-container">
+            <button>Reset</button>
+        </div>
+    </div>
+    <div class="credits" id="credits-menu" style="display: none;">
+        <p>Free for use. Written by Daniel Wells 2023.</p>
+    </div>
+    <div class="block-out" id="block-out-div" style="display: none" onclick="settingsMenu()">
+    </div>
+    <div class="controller" id="default-controller">
+        <h2>Controller:</h2>
+        <p>
+            Press the buttons (below) to translate the square. The reflections are shown overlaid on the square (X, Y, W, Z). The rotations (O, P, Q, R) are worth (2&pi;, &pi;/2, &pi;, 3&pi;/2) respectively. Rotations are anti-clockwise. The square is blue when facing towards you and red when facing away from you. The black arrow shows the top of the square in its initial position.
+        </p>
+        <div class="button-wrapper">
+            <button onclick="transform.transformSquare('0')" title="Transformation O">O</button>
+            <button onclick="transform.transformSquare('P')" title="Transformation P">P</button>
+            <button onclick="transform.transformSquare('Q')" title="Transformation Q">Q</button>
+            <button onclick="transform.transformSquare('R')" title="Transformation R">R</button>
+            <button onclick="transform.transformSquare('W')" title="Transformation W">W</button>
+            <button onclick="transform.transformSquare('X')" title="Transformation X">X</button>
+            <button onclick="transform.transformSquare('Y')" title="Transformation Y">Y</button>
+            <button onclick="transform.transformSquare('Z')" title="Transformation Z">Z</button>
+        </div>
+    </div>
+    <div class="cayley-table" id="graphical-table">
+        <h2 onclick="toggleTableView()">View Cayley Table:</h2>
+        <div class="table-container" style="display: none;" id="graphical-table-display">
+            <div class="table-row">
+                <div class="blank"></div>
+                <div class="highlight">O</div><div class="highlight">P</div>
+                <div class="highlight">Q</div><div class="highlight">R</div>
+                <div class="highlight">W</div><div class="highlight">X</div>
+                <div class="highlight">Y</div><div class="highlight">Z</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">O</div><div>O</div><div>P</div><div>Q</div>
+                <div>R</div><div>W</div><div>X</div><div>Y</div><div>Z</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">P</div><div>P</div><div>Q</div><div>R</div>
+                <div>O</div><div>Y</div><div>W</div><div>Z</div><div>X</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">Q</div><div>Q</div><div>R</div><div>O</div>
+                <div>P</div><div>Z</div><div>Y</div><div>X</div><div>W</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">R</div><div>R</div><div>O</div><div>P</div>
+                <div>Q</div><div>X</div><div>Z</div><div>W</div><div>Y</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">W</div><div>W</div><div>X</div><div>Z</div>
+                <div>Y</div><div>O</div><div>P</div><div>R</div><div>Q</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">X</div><div>X</div><div>W</div><div>Y</div>
+                <div>Z</div><div>P</div><div>O</div><div>Q</div><div>R</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">Y</div><div>Y</div><div>Z</div><div>X</div>
+                <div>W</div><div>R</div><div>Q</div><div>O</div><div>P</div>
+            </div>
+            <div class="table-row">
+                <div class="highlight">Z</div><div>Z</div><div>Y</div><div>W</div>
+                <div>X</div><div>Q</div><div>R</div><div>P</div><div>O</div>
+            </div>
+        </div>
+    </div>
+    <div class="controller-small-screen" style="display: none" id="small-controller">
+        <button onclick="transform.transformSquare('0')" title="Transformation O">O</button>
+        <button onclick="transform.transformSquare('P')" title="Transformation P">P</button>
+        <button onclick="transform.transformSquare('Q')" title="Transformation Q">Q</button>
+        <button onclick="transform.transformSquare('R')" title="Transformation R">R</button>
+        <button onclick="transform.transformSquare('W')" title="Transformation W">W</button>
+        <button onclick="transform.transformSquare('X')" title="Transformation X">X</button>
+        <button onclick="transform.transformSquare('Y')" title="Transformation Y">Y</button>
+        <button onclick="transform.transformSquare('Z')" title="Transformation Z">Z</button>
+    </div>
+    <div class="axis-container">
+        <img src="axis.png" alt="failed-to-load">
+    </div>
+    <div class="transformations-container">
+        <div class="square" id="transform-square">
+            <img src="arrow.png" alt="failed-to-load">
+        </div>
+    </div>
+    <script>
+        let rotationSpeed = document.getElementById("rotation-speed");
+        rotationSpeed.addEventListener("mousemove", () => {
+            rotationSpeed.setAttribute("title", rotationSpeed.value);
+            transform.updateSquareRotationSpeed(rotationSpeed.value);
+        });
+        let linearRotation = document.getElementById("linear-rotation");
+        linearRotation.addEventListener("click", () => {
+            transform.updateSquareRotationType(linearRotation.checked);
+        });
+        let smallScreen = document.getElementById("4-3-screen");
+        smallScreen.addEventListener("click", () => {
+            if (smallScreen.checked) {
+                document.getElementById("default-controller").style.display = "none";
+                document.getElementById("small-controller").style.display = "block";
+                document.getElementById("graphical-table").style.display = "none";
+            } else {
+                document.getElementById("default-controller").style.display = "block";
+                document.getElementById("small-controller").style.display = "none";
+                document.getElementById("graphical-table").style.display = "block";
+            }
+        })
+
+        const transform = new Transform();
+    </script>
+</body>
+</html>
